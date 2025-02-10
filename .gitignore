@@ -1,0 +1,37 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Environnement virtuel
+myenv/
+venv/
+ENV/
+
+# Fichiers sensibles
+.env
+
+# Logs
+*.log
+data_collection.log
+
+# Fichiers Excel (sauf le fichier principal)
+*.xlsx
+!data/Tickers_Yahoo_F.xlsx
+
+# VS Code
+.vscode/
+
+# Base de données
+*.sqlite3
+
+# Mage
+.mage_temp/
+.mage_output/
+
+# Docker
+docker-compose.override.yml
+
+# Système
+.DS_Store
+Thumbs.db
