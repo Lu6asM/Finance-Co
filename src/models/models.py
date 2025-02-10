@@ -1,5 +1,6 @@
-from sqlalchemy import Column, Integer, String, Float, DateTime, Index
+from sqlalchemy import Column, Integer, String, Float, DateTime, Index, ForeignKey
 from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy.orm import relationship
 from datetime import datetime
 
 Base = declarative_base()
@@ -100,15 +101,30 @@ class StockData(Base):
     PER_previsionnel = Column(Float)
     Ratio_PEG_historique = Column(Float)
 
-    # Métadonnées
-    Date_de_collecte = Column(DateTime, default=datetime.utcnow)
+    # Relation avec PriorityStocks (optionnel si besoin)
+    priority_stock = relationship("PriorityStocks", back_populates="stock_data", uselist=False)
 
-    # Index pour optimiser les requêtes
+class PriorityStocks(Base):
+    """Table pour le suivi temps réel des 55 tickers prioritaires"""
+    __tablename__ = 'priority_stocks'
+
+    id = Column(Integer, primary_key=True)
+    Ticker = Column(String, nullable=False)
+    Nom_complet = Column(String)
+    Prix_actuel = Column(Float)
+    Volume = Column(Float)
+    Variation_jour = Column(Float)  # Pour le % de variation
+    Date_collecte = Column(DateTime, default=lambda: datetime.utcnow())
+
+    # Clé étrangère pour relier aux données principales
+    stock_data_id = Column(Integer, ForeignKey('stock_data.id'), nullable=True)
+    
+    # Relation avec StockData
+    stock_data = relationship("StockData", back_populates="priority_stock")
+
     __table_args__ = (
-        Index('idx_ticker_date', 'Ticker', 'Date_de_collecte'),
-        Index('idx_ticker', 'Ticker'),
-        Index('idx_date', 'Date_de_collecte'),
+        Index('idx_priority_ticker_date', 'Ticker', 'Date_collecte'),
     )
 
     def __repr__(self):
-        return f"<StockData(Ticker='{self.Ticker}', Prix_actuel={self.Prix_actuel}, Date_de_collecte='{self.Date_de_collecte}')>"
+        return f"<PriorityStocks(Ticker='{self.Ticker}', Prix_actuel={self.Prix_actuel}, Date_collecte='{self.Date_collecte}')>"
