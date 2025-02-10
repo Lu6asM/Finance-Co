@@ -1,7 +1,7 @@
 # Finance_co Project
 
 ## Description
-Application de collecte et analyse de données financières avec actualisation quotidienne.
+Collecte des tickers d'actions avec l'API yfinance pour analyser leurs données financières et créer un portefeuille boursier efficient, actualisé quotidiennement.
 
 ## Structure
 - src/ : Code source
