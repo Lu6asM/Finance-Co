@@ -16,7 +16,7 @@ st.set_page_config(
 # Fonction pour charger les données sélectionnées
 def load_selected_stocks():
     try:
-        return pd.read_csv('selected_stocks.csv')
+        return pd.read_csv('https://raw.githubusercontent.com/thidescac25/Finance-Co/refs/heads/main/data/stocks_data.csv')
     except Exception as e:
         st.error(f"Erreur lors du chargement des stocks sélectionnés : {str(e)}")
         return None

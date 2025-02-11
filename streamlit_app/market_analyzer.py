@@ -12,7 +12,7 @@ class MarketAnalyzer:
         """Charge et nettoie les données du marché"""
         try:
             # Chargement des données
-            df = pd.read_csv('stocks_data.csv')
+            df = pd.read_csv('https://raw.githubusercontent.com/thidescac25/Finance-Co/refs/heads/main/data/stocks_data.csv')
             
             # Nettoyage des données
             df = prepare_market_data(df)
