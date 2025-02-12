@@ -8,5 +8,3 @@ streamlit
 plotly
 feedparser
 datetime
-urllib.parse
-time
