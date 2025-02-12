@@ -10,6 +10,7 @@ class StockData(Base):
     __tablename__ = 'stock_data'
     
     id = Column(Integer, primary_key=True)
+    Date_de_collecte = Column(DateTime, default=datetime.utcnow)
     
     # 1. Informations générales
     Ticker = Column(String, nullable=False)
