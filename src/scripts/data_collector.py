@@ -14,12 +14,13 @@ from src.config.constants import (
     LOG_FILE
 )
 
-# Configuration du logging simple
+# Configuration du logging détaillé
 logging.basicConfig(
     level=logging.INFO,
-    format='%(message)s',
+    format='%(asctime)s - %(levelname)s - %(message)s',
     handlers=[
-        logging.StreamHandler()
+        logging.StreamHandler(),
+        logging.FileHandler(LOG_FILE)
     ]
 )
 
@@ -62,14 +63,16 @@ def get_split_date(timestamp) -> datetime:
 
 def collect_stock_data(ticker):
     """Collecte les données pour un ticker"""
+    logger.info(f"Collecte des données pour {ticker}")
     try:
         stock = yf.Ticker(ticker)
         try:
             info = stock.info
+            if not info:
+                logger.warning(f"Pas d'informations trouvées pour {ticker}")
+                return None
         except Exception as e:
-            return None
-
-        if not info:
+            logger.error(f"Erreur lors de la récupération des infos pour {ticker}: {str(e)}")
             return None
 
         stock_data = {
@@ -167,43 +170,58 @@ def collect_stock_data(ticker):
             "Date_de_collecte": datetime.now()
         }
 
+        logger.info(f"Données collectées avec succès pour {ticker}")
         return stock_data
 
-    except Exception:
+    except Exception as e:
+        logger.error(f"Erreur lors de la collecte pour {ticker}: {str(e)}")
         return None
 
 def save_to_database(data):
     """Sauvegarde les données dans PostgreSQL"""
+    if not data:
+        return False
+        
     try:
         with get_db() as db:
             try:
                 stock_entry = StockData(**data)
                 db.add(stock_entry)
                 db.commit()
-                logger.info(f"✓ {data['Ticker']} : OK")
+                logger.info(f"✓ {data['Ticker']} : Sauvegarde OK")
                 return True
-            except SQLAlchemyError:
+            except SQLAlchemyError as e:
                 db.rollback()
-                logger.error(f"✗ {data['Ticker']} : Échec")
+                logger.error(f"✗ {data['Ticker']} : Échec de sauvegarde - {str(e)}")
                 return False
-    except Exception:
+    except Exception as e:
+        logger.error(f"Erreur de connexion à la base pour {data['Ticker']}: {str(e)}")
         return False
 
 def main():
     try:
         # Lecture du fichier de tickers
         try:
+            logger.info(f"Lecture du fichier {EXCEL_FILE}")
             df_tickers = pd.read_excel(EXCEL_FILE)
             if df_tickers.empty:
                 logger.error("Fichier de tickers vide")
                 return
             logger.info(f"Démarrage : {len(df_tickers)} tickers à traiter\n")
+            
+            # Affiche les premiers tickers pour vérification
+            logger.info("Premiers tickers à traiter :")
+            for idx, ticker in enumerate(df_tickers['stock_ticker'].head().values):
+                logger.info(f"{idx+1}. {ticker}")
+            logger.info("")
+
         except Exception as e:
             logger.error(f"Erreur lecture fichier tickers: {str(e)}")
             return
 
         success_count = 0
         error_count = 0
+        total_count = len(df_tickers)
 
         # Traitement de chaque ticker
         for index, row in df_tickers.iterrows():
@@ -212,9 +230,14 @@ def main():
                 if not ticker:
                     continue
 
+                logger.info(f"\nTraitement {index+1}/{total_count} : {ticker}")
+
                 # Tentatives avec retry
                 retries = 0
                 while retries < MAX_RETRIES:
+                    if retries > 0:
+                        logger.info(f"Tentative {retries+1} pour {ticker}")
+                    
                     stock_data = collect_stock_data(ticker)
                     if stock_data:
                         if save_to_database(stock_data):
@@ -222,15 +245,23 @@ def main():
                             break
                     retries += 1
                     if retries < MAX_RETRIES:
+                        logger.info(f"Pause de {RETRY_DELAY}s avant nouvelle tentative...")
                         time.sleep(RETRY_DELAY)
 
                 if retries == MAX_RETRIES:
                     error_count += 1
+                    logger.warning(f"Échec après {MAX_RETRIES} tentatives pour {ticker}")
+
+                # Progression
+                if (index + 1) % 10 == 0:
+                    logger.info(f"\nPROGRESSION : {index+1}/{total_count} ({((index+1)/total_count*100):.1f}%)")
+                    logger.info(f"Succès: {success_count}, Erreurs: {error_count}\n")
 
                 time.sleep(RETRY_DELAY)  # Pause entre chaque ticker
 
-            except Exception:
+            except Exception as e:
                 error_count += 1
+                logger.error(f"Erreur inattendue pour {ticker}: {str(e)}")
                 continue
 
         # Rapport final
@@ -238,6 +269,7 @@ def main():
         logger.info(f"Total traité : {success_count + error_count}")
         logger.info(f"Succès : {success_count}")
         logger.info(f"Erreurs : {error_count}")
+        logger.info(f"Taux de succès : {(success_count/(success_count + error_count)*100):.1f}%")
 
     except KeyboardInterrupt:
         logger.info("\nCollecte interrompue par l'utilisateur")
