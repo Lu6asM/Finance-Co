@@ -38,7 +38,7 @@ def verify_tables():
             if missing_tables:
                 logger.warning(f"Tables manquantes: {missing_tables}")
                 return False
-                
+            
             logger.info("Table stock_data créée avec succès")
             return True
             
@@ -49,11 +49,11 @@ def verify_tables():
 def main():
     """Script principal d'initialisation de la base de données"""
     logger.info("Début de l'initialisation de la base de données...")
-    
+
     if not test_db_connection():
         logger.error("Impossible de se connecter à la base de données")
         return
-    
+
     try:
         clean_database()
         init_db()
@@ -62,7 +62,7 @@ def main():
             logger.info("Initialisation de la base de données terminée avec succès")
         else:
             logger.error("La table n'a pas été créée correctement")
-        
+            
     except Exception as e:
         logger.error(f"Erreur lors de l'initialisation: {str(e)}")
 
