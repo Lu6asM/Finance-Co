@@ -1,13 +1,23 @@
 # pages/1_🌍_Vue_Globale.py
 import streamlit as st
 from market_analyzer import MarketAnalyzer
+from utils import add_news_ticker
+
+# Configuration de la page
+st.set_page_config(
+    page_title="Finance Dashboard",
+    page_icon="📈",
+    layout="wide",
+    initial_sidebar_state="expanded"
+)
 
 def main():
-    st.set_page_config(page_title="Vue Globale du Marché", layout="wide")
+    add_news_ticker()
     st.title("🌍 Vue Globale du Marché")
     
     # Initialisation de l'analyseur
     analyzer = MarketAnalyzer()
+
     
     if analyzer.market_data is not None and not analyzer.market_data.empty:
         # Filtres dans la barre latérale

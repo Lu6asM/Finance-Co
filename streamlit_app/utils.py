@@ -1,4 +1,6 @@
 import pandas as pd
+import yfinance as yf
+import streamlit as st
 import numpy as np
 
 def get_exchange_rates():
@@ -84,3 +86,55 @@ def prepare_market_data(df):
     df = df.sort_values('Capitalisation_boursiere', ascending=False)
     
     return df
+
+def initialize_ticker_data():
+    """Initialise les données du ticker une seule fois par session"""
+    if 'ticker_data' not in st.session_state:
+        from stock_analyzer import StockAnalyzer
+        analyzer = StockAnalyzer()
+        st.session_state.ticker_data = analyzer.get_ticker_prices()
+
+def add_news_ticker():
+    """Ajoute le bandeau de news à la page en utilisant les données en cache"""
+    # S'assure que les données sont initialisées
+    initialize_ticker_data()
+    
+    # Styles CSS pour le bandeau
+    st.markdown("""
+    <style>
+        .ticker-container {
+            width: 100%;
+            overflow: hidden;
+            white-space: nowrap;
+            background-color: #f8f9fa;
+            padding: 15px 0;
+            border-top: 1px solid #dee2e6;
+            border-bottom: 1px solid #dee2e6;
+            margin-bottom: 20px;
+        }
+        .ticker-item {
+            display: inline-block;
+            padding: 0 50px;
+            animation: ticker 1440s linear infinite;
+        }
+        @keyframes ticker {
+            0% { transform: translateX(100%); }
+            100% { transform: translateX(-100%); }
+        }
+        .ticker-item > span {
+            margin: 0 100px;
+            padding: 5px 15px;
+            border-right: 2px solid #dee2e6;
+        }
+    </style>
+    """, unsafe_allow_html=True)
+    
+    # Affichage du bandeau avec les données en cache
+    ticker_html = ' '.join([f"<span>{item}</span>" for item in st.session_state.ticker_data])
+    st.markdown(f"""
+    <div class="ticker-container">
+        <div class="ticker-item">
+            {ticker_html}
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
