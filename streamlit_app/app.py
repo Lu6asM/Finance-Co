@@ -45,6 +45,10 @@ def create_market_summary(market_data):
 
 def main():
     st.title("📊 Finance Dashboard")
+
+    # Initialisation des données du ticker au démarrage
+    from utils import initialize_ticker_data
+    initialize_ticker_data()
     
     analyzer = MarketAnalyzer()
     selected_stocks = load_selected_stocks()
