@@ -29,37 +29,87 @@ class StockAnalyzer:
             "Unibail-Rodamco-Westfield": "URW.PA", "Veolia Environnement": "VIE.PA",
             "Vinci": "DG.PA", "Walmart": "WMT", "Zurich Insurance Group": "ZURN.SW"
         }
-
-    @staticmethod
-    @st.cache_data(ttl=300)  # Cache de 5 minutes
-    def get_stock_data(ticker):
         try:
-            stock = yf.Ticker(ticker)
-            info = stock.info
+            # Charger le CSV contenant les business models
+            self.stocks_data = pd.read_csv('https://raw.githubusercontent.com/thidescac25/Finance-Co/refs/heads/main/data/selected_stocks.csv')
+            # Convertir les noms de colonnes en string pour éviter les problèmes de type
+            self.stocks_data.columns = self.stocks_data.columns.astype(str)
+        except Exception as e:
+            st.error(f"Erreur lors du chargement du CSV: {e}")
+            self.stocks_data = pd.DataFrame()
+
+    @st.cache_data(ttl=300)
+    def get_stock_data(_self, ticker):
+        try:
+            # D'abord, trouver la correspondance dans le dictionnaire
+            company_name = next((name for name, t in _self.tickers_dict.items() if t == ticker), None)
             
+            # Récupérer les données du CSV
+            stock_info = {}
+            if not _self.stocks_data.empty:
+                # Chercher par ticker exact
+                csv_data = _self.stocks_data[_self.stocks_data['Ticker'] == ticker]
+                if csv_data.empty and company_name:
+                    # Si pas trouvé, chercher par nom de l'entreprise
+                    csv_data = _self.stocks_data[_self.stocks_data['Nom_complet'].str.contains(company_name, case=False, na=False)]
+                
+                if not csv_data.empty:
+                    row = csv_data.iloc[0]
+                    stock_info = {
+                        "Nom": row.get('Nom_complet', company_name or ticker),
+                        "Business_models": row.get('Business_models', ''),
+                        "Industrie": row.get('Industrie', 'N/A'),
+                        "Pays": row.get('Pays', 'N/A')
+                    }
+            
+            # Compléter avec les données yfinance
+            stock = yf.Ticker(ticker)
+            info = stock.info if hasattr(stock, 'info') else {}
             hist = stock.history(period="2d")
             variation = 0
             if len(hist) >= 2:
                 variation = ((hist['Close'].iloc[-1] - hist['Close'].iloc[-2]) / hist['Close'].iloc[-2]) * 100
             
-            cap_boursiere = round(info.get("marketCap", 0) / 1e9, 2) if info.get("marketCap") else "N/A"
-
-            return {
-                "Nom": info.get("longName", "N/A"),
-                "Prix actuel": info.get("currentPrice", "N/A"),
+            # Mettre à jour stock_info avec les données yfinance
+            if not stock_info:
+                stock_info = {
+                    "Nom": info.get("longName", ticker),
+                    "Business_models": "",
+                    "Industrie": info.get("industry", "N/A"),
+                    "Pays": info.get("country", "N/A")
+                }
+            
+            stock_info.update({
+                "Prix actuel": info.get("currentPrice", hist['Close'].iloc[-1] if not hist.empty else "N/A"),
                 "Variation": round(variation, 2),
                 "PER historique": info.get("trailingPE", "N/A"),
                 "BPA historique": info.get("trailingEps", "N/A"),
-                "Rendement dividende": round(info.get("dividendYield", 0) * 100, 2) if info.get("dividendYield") else "N/A",  # Multiplié par 100
+                "Rendement dividende": round(info.get("dividendYield", 0) * 100, 2) if info.get("dividendYield") else "N/A",
                 "Plus haut 52 sem.": info.get("fiftyTwoWeekHigh", "N/A"),
                 "Plus bas 52 sem.": info.get("fiftyTwoWeekLow", "N/A"),
-                "Cap. Boursière (Mds)": cap_boursiere,
-                "Analystes": info.get("numberOfAnalystOpinions", "N/A"),
-                "Pays": info.get("country", "N/A"),
-                "Industrie": info.get("industry", "N/A"),
-            }
+                "Cap. Boursière (Mds)": round(info.get("marketCap", 0) / 1e9, 2) if info.get("marketCap") else "N/A",
+                "Analystes": info.get("numberOfAnalystOpinions", "N/A")
+            })
+            
+            return stock_info
+            
         except Exception as e:
-            return {"Erreur": str(e)}
+            st.error(f"Erreur lors de la récupération des données pour {ticker}: {str(e)}")
+            return {
+                "Nom": ticker,
+                "Prix actuel": "N/A",
+                "Variation": 0,
+                "PER historique": "N/A",
+                "BPA historique": "N/A",
+                "Rendement dividende": "N/A",
+                "Plus haut 52 sem.": "N/A",
+                "Plus bas 52 sem.": "N/A",
+                "Cap. Boursière (Mds)": "N/A",
+                "Analystes": "N/A",
+                "Pays": "N/A",
+                "Industrie": "N/A",
+                "Business_models": ""
+            }
 
     def get_ticker_prices(self):
         ticker_data = []
