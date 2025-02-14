@@ -115,10 +115,11 @@ def add_news_ticker():
         .ticker-item {
             display: inline-block;
             padding: 0 50px;
-            animation: ticker 1440s linear infinite;
+            animation: ticker 180s linear infinite;
+            animation-delay: -30s;
         }
         @keyframes ticker {
-            0% { transform: translateX(100%); }
+            0% { transform: translateX(0%); }
             100% { transform: translateX(-100%); }
         }
         .ticker-item > span {
