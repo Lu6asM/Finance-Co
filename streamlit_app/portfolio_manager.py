@@ -76,13 +76,85 @@ class PortfolioManager:
         if start_date is None:
             start_date = (datetime.now() - timedelta(days=365)).strftime('%Y-%m-%d')
         
+        # Style CSS pour tous les éléments
+        st.markdown("""
+        <style>
+        .performance-metric {
+            padding: 1.5rem;
+            border-radius: 0.5rem;
+            background: #f8f9fa;
+            margin: 0.5rem 0;
+            text-align: center;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            transition: transform 0.2s ease;
+        }
+        .performance-metric:hover {
+            transform: translateY(-2px);
+        }
+        .performance-metric h3 {
+            margin: 0;
+            color: #1f77b4;
+            font-size: 1.8rem;
+            font-weight: 600;
+        }
+        .performance-metric p {
+            margin: 0.5rem 0 0 0;
+            font-size: 1rem;
+            color: #666;
+        }
+        .metric-positive {
+            color: #2ca02c !important;
+        }
+        .metric-negative {
+            color: #d62728 !important;
+        }
+        .performance-list {
+            background: #f8f9fa;
+            padding: 1.5rem;
+            border-radius: 0.5rem;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .performance-list h3 {
+            color: #1f77b4;
+            margin-bottom: 1rem;
+        }
+        .performance-item {
+            padding: 0.5rem;
+            margin: 0.25rem 0;
+            border-radius: 0.25rem;
+            transition: background-color 0.2s ease;
+        }
+        .performance-item:hover {
+            background-color: #e9ecef;
+        }
+        .summary-card {
+            background: #ffffff;
+            padding: 1.5rem;
+            border-radius: 0.5rem;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            margin: 1rem 0;
+        }
+        .progress-update {
+            padding: 1rem;
+            background: #e9ecef;
+            border-radius: 0.5rem;
+            margin-bottom: 1rem;
+        }
+        </style>
+        """, unsafe_allow_html=True)
+        
         # Dictionnaire pour stocker toutes les séries de données
         all_series = {}
         positions_data = []
         
-        st.write("### Mise à jour des valeurs...")
+        st.markdown("""
+        <div class="progress-update">
+            <h3>📊 Mise à jour des valeurs...</h3>
+        </div>
+        """, unsafe_allow_html=True)
         progress_bar = st.progress(0)
         
+        # [Code de récupération des données inchangé...]
         for idx, stock in self.portfolio_data.iterrows():
             progress_bar.progress(idx/len(self.portfolio_data))
             
@@ -95,16 +167,11 @@ class PortfolioManager:
             try:
                 hist_data = yf.Ticker(ticker).history(start=start_date)
                 if not hist_data.empty:
-                    # On récupère le premier prix disponible
                     first_price = hist_data['Close'].iloc[0]
-                    # On ajuste le nombre d'actions pour avoir la bonne valeur initiale
                     adjusted_shares = (stock['valeur_position'] / (first_price * exchange_rate))
-                    
-                    # On calcule toute la série avec ce nombre d'actions ajusté
                     stock_values = hist_data['Close'] * adjusted_shares * exchange_rate
                     all_series[ticker] = stock_values
                     
-                    # Pour les métriques finales
                     current_price = hist_data['Close'].iloc[-1]
                     current_value = adjusted_shares * current_price * exchange_rate
                     variation = ((current_value/stock['valeur_position'])-1)*100
@@ -131,40 +198,36 @@ class PortfolioManager:
 
         # Combiner toutes les séries
         if all_series:
-            # Créer un DataFrame avec toutes les séries
             historical_values = pd.DataFrame(all_series)
-            
-            # Remplir les valeurs manquantes en commençant par la fin
-            historical_values = historical_values.fillna(method='bfill')
-            # Puis remplir le reste avec la méthode forward
-            historical_values = historical_values.fillna(method='ffill')
-            
-            # Calculer la somme totale
+            historical_values = historical_values.fillna(method='bfill').fillna(method='ffill')
             historical_values['Total'] = historical_values.sum(axis=1)
-            # Garder uniquement la colonne Total
             historical_values = historical_values[['Total']]
             
-            # Calcul des performances
+            # Calculs de performance
             total_current_value = historical_values['Total'].iloc[-1]
             total_initial_value = historical_values['Total'].iloc[0]
             total_variation = ((total_current_value/total_initial_value)-1)*100
             
-            # Création du graphique
-            fig = make_subplots(rows=2, cols=1, 
-                               subplot_titles=('Valeur du Portefeuille', 'Performance Cumulée (%)'),
-                               vertical_spacing=0.12)
+            # Graphique amélioré
+            fig = make_subplots(
+                rows=2, cols=1,
+                subplot_titles=('Valeur du Portefeuille (€)', 'Performance Cumulée (%)'),
+                vertical_spacing=0.12
+            )
 
+            # Premier graphique - Valeur du portefeuille
             fig.add_trace(
                 go.Scatter(
                     x=historical_values.index,
                     y=historical_values['Total'],
                     mode='lines',
                     name='Valeur du Portefeuille',
-                    line=dict(color='#1f77b4')
+                    line=dict(color='#1f77b4', width=2)
                 ),
                 row=1, col=1
             )
 
+            # Deuxième graphique - Performance cumulée
             performance = (historical_values['Total'] / historical_values['Total'].iloc[0] - 1) * 100
             fig.add_trace(
                 go.Scatter(
@@ -172,7 +235,7 @@ class PortfolioManager:
                     y=performance,
                     mode='lines',
                     name='Performance Cumulée',
-                    line=dict(color='#2ca02c')
+                    line=dict(color='#2ca02c', width=2)
                 ),
                 row=2, col=1
             )
@@ -180,108 +243,146 @@ class PortfolioManager:
             fig.update_layout(
                 height=800,
                 showlegend=True,
-                title_text="Evolution du Portefeuille"
+                title_text="Evolution du Portefeuille",
+                paper_bgcolor='white',
+                plot_bgcolor='white',
+                font=dict(size=12),
+                hovermode='x unified'
             )
+
+            # Ajouter des grilles
+            fig.update_xaxes(showgrid=True, gridwidth=1, gridcolor='#f0f0f0')
+            fig.update_yaxes(showgrid=True, gridwidth=1, gridcolor='#f0f0f0')
 
             st.plotly_chart(fig, use_container_width=True)
             
-            st.write(f"""
-            ### Résumé ###
-            - Valeur initiale totale: {total_initial_value:,.2f}€
-            - Valeur actuelle totale: {total_current_value:,.2f}€
-            - Performance globale: {total_variation:+.2f}%
-            """)
+            # Résumé avec style
+            st.markdown(f"""
+            <div class="summary-card">
+                <h3>📊 Résumé</h3>
+                <p><strong>Valeur initiale:</strong> {total_initial_value:,.2f}€</p>
+                <p><strong>Valeur actuelle:</strong> {total_current_value:,.2f}€</p>
+                <p><strong>Performance globale:</strong> <span class="{'metric-positive' if total_variation >= 0 else 'metric-negative'}">{total_variation:+.2f}%</span></p>
+            </div>
+            """, unsafe_allow_html=True)
 
-            # Top/Flop 5
+            # Top/Flop 5 avec style
             positions_df = pd.DataFrame(positions_data)
             top5 = positions_df.nlargest(5, 'variation')
             flop5 = positions_df.nsmallest(5, 'variation')
             
             col1, col2 = st.columns(2)
             with col1:
-                st.write("### Top 5 Performances ###")
+                st.markdown("""
+                <div class="performance-list">
+                    <h3>🔝 Top 5 Performances</h3>
+                """, unsafe_allow_html=True)
                 for _, pos in top5.iterrows():
-                    st.write(f"{pos['ticker']}: {pos['variation']:+.2f}%")
+                    st.markdown(f"""
+                    <div class="performance-item">
+                        <span style="font-weight: bold;">{pos['ticker']}</span>: 
+                        <span class="metric-positive">{pos['variation']:+.2f}%</span>
+                    </div>
+                    """, unsafe_allow_html=True)
+                st.markdown("</div>", unsafe_allow_html=True)
             
             with col2:
-                st.write("### Flop 5 Performances ###")
+                st.markdown("""
+                <div class="performance-list">
+                    <h3>👎 Flop 5 Performances</h3>
+                """, unsafe_allow_html=True)
                 for _, pos in flop5.iterrows():
-                    st.write(f"{pos['ticker']}: {pos['variation']:+.2f}%")
+                    st.markdown(f"""
+                    <div class="performance-item">
+                        <span style="font-weight: bold;">{pos['ticker']}</span>: 
+                        <span class="metric-negative">{pos['variation']:+.2f}%</span>
+                    </div>
+                    """, unsafe_allow_html=True)
+                st.markdown("</div>", unsafe_allow_html=True)
 
-            # Métriques supplémentaires
+            # Métriques supplémentaires avec style
             volatility = historical_values['Total'].pct_change().std() * np.sqrt(252) * 100
             max_drawdown = ((historical_values['Total'] - historical_values['Total'].cummax()) / 
-                           historical_values['Total'].cummax()).min() * 100
+                        historical_values['Total'].cummax()).min() * 100
 
             col1, col2, col3 = st.columns(3)
+            
             with col1:
-                st.metric("Performance", f"{total_variation:+.2f}%")
+                st.markdown(f"""
+                <div class="performance-metric">
+                    <h3 class="{'metric-positive' if total_variation >= 0 else 'metric-negative'}">{total_variation:+.2f}%</h3>
+                    <p>Performance globale</p>
+                </div>
+                """, unsafe_allow_html=True)
+
             with col2:
-                st.metric("Volatilité annualisée", f"{volatility:.2f}%")
+                st.markdown(f"""
+                <div class="performance-metric">
+                    <h3>{volatility:.2f}%</h3>
+                    <p>Volatilité annualisée</p>
+                </div>
+                """, unsafe_allow_html=True)
+
             with col3:
-                st.metric("Drawdown Maximum", f"{max_drawdown:.2f}%")
+                st.markdown(f"""
+                <div class="performance-metric">
+                    <h3>{abs(max_drawdown):.2f}%</h3>
+                    <p>Drawdown Maximum</p>
+                </div>
+                """, unsafe_allow_html=True)
 
     def create_portfolio_overview(self):
-            """Crée une vue d'ensemble du portefeuille"""
-            fig = make_subplots(
-                rows=2, cols=2,
-                subplot_titles=(
-                    'Répartition sectorielle',
-                    'Répartition géographique',
-                    'Top 10 positions',
-                    'Distribution des rendements'
-                ),
-                specs=[[{'type': 'pie'}, {'type': 'pie'}],
-                    [{'type': 'bar'}, {'type': 'histogram'}]]
+        """Crée une vue d'ensemble du portefeuille"""
+        fig = make_subplots(
+            rows=1, cols=2,
+            subplot_titles=(
+                'Répartition sectorielle',
+                'Répartition géographique'
+            ),
+            specs=[[{'type': 'pie'}, {'type': 'pie'}]]
+        )
+        
+        # Répartition sectorielle
+        secteur_data = self.portfolio_data.groupby('Secteur')['valeur_position'].sum()
+        fig.add_trace(
+            go.Pie(
+                labels=secteur_data.index,
+                values=secteur_data.values,
+                name="Secteurs",
+                hole=0.3,
+                legendgroup="secteurs",
+                showlegend=True
+            ),
+            row=1, col=1
+        )
+        
+        # Répartition géographique
+        pays_data = self.portfolio_data.groupby('Pays')['valeur_position'].sum()
+        fig.add_trace(
+            go.Pie(
+                labels=pays_data.index,
+                values=pays_data.values,
+                name="Pays",
+                hole=0.3,
+                legendgroup="pays",
+                showlegend=True
+            ),
+            row=1, col=2
+        )
+        
+        fig.update_layout(
+            title_text="Vue d'ensemble du portefeuille",
+            height=400,  # Réduit la hauteur du graphique
+            width=1100,  # Augmente la largeur pour bien utiliser l'espace
+            showlegend=True,
+            legend=dict(
+                orientation="h",  # Légende en horizontal
+                yanchor="bottom",
+                y=-0.2,  # Décalage sous le graphe
+                xanchor="center",
+                x=0.5,
+                
             )
-            
-            # Répartition sectorielle
-            secteur_data = self.portfolio_data.groupby('Secteur')['valeur_position'].sum()
-            fig.add_trace(
-                go.Pie(
-                    labels=secteur_data.index,
-                    values=secteur_data.values,
-                    name="Secteurs"
-                ),
-                row=1, col=1
-            )
-            
-            # Répartition géographique
-            pays_data = self.portfolio_data.groupby('Pays')['valeur_position'].sum()
-            fig.add_trace(
-                go.Pie(
-                    labels=pays_data.index,
-                    values=pays_data.values,
-                    name="Pays"
-                ),
-                row=1, col=2
-            )
-            
-            # Top 10 positions
-            top10 = self.portfolio_data.nlargest(10, 'valeur_position')
-            fig.add_trace(
-                go.Bar(
-                    x=top10['Nom complet'],
-                    y=top10['valeur_position'],
-                    name="Top 10"
-                ),
-                row=2, col=1
-            )
-            
-            # Distribution des rendements
-            if 'Variation 52 semaines' in self.portfolio_data.columns:
-                fig.add_trace(
-                    go.Histogram(
-                        x=self.portfolio_data['Variation 52 semaines'],
-                        name="Rendements"
-                    ),
-                    row=2, col=2
-                )
-            
-            fig.update_layout(
-                height=800, 
-                showlegend=True,
-                title_text="Vue d'ensemble du portefeuille"
-            )
-            
-            return fig
+        )
+        
+        return fig
