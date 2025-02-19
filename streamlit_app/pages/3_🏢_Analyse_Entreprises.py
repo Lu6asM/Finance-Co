@@ -180,7 +180,7 @@ def main():
             st.warning(
                 f"""
                 **💰 Rendement**
-                ### {data['Rendement dividende']}%
+                ### {data['Rendement dividende'] / 100}%
                 Dividende
                 """
             )
