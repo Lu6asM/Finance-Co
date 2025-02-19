@@ -17,6 +17,9 @@ class MarketAnalyzer:
             # Nettoyage des données
             df = prepare_market_data(df)
 
+            if 'Rendement_du_dividende' in df.columns:
+                df['Rendement_du_dividende'] = df['Rendement_du_dividende']
+
             self.market_data = df
             
         except Exception as e:
@@ -93,7 +96,7 @@ class MarketAnalyzer:
         return {
             'nb_companies': len(df),
             'total_market_cap': df['Capitalisation_boursiere'].sum(),
-            'avg_per': df['PER_historique'].mean(),
+            'med_per': df['PER_historique'].median(),
             'avg_yield': df['Rendement_du_dividende'].mean(),
             'avg_variation': df['Variation_52_semaines'].mean()
         }

@@ -139,7 +139,7 @@ def main():
                 f"""
                 **🏢 Entreprises**
                 ### {metrics['nb_companies']:,}
-                sociétés analysées
+                Sociétés analysées
                 """
             )
         
@@ -148,7 +148,7 @@ def main():
                 f"""
                 **💰 Capitalisation**
                 ### {metrics['total_market_cap']/1e9:.1f} Mrd€
-                valeur totale
+                Valeur totale
                 """
             )
         
@@ -156,8 +156,8 @@ def main():
             st.warning(
                 f"""
                 **📊 PER Moyen**
-                ### {metrics['avg_per']:.1f}
-                valorisation
+                ### {metrics['med_per']:.1f}
+                Valorisation
                 """
             )
         
@@ -167,7 +167,7 @@ def main():
                 f"""
                 **💸 Rendement**
                 ### {metrics['avg_yield']:.1f}%
-                dividende moyen
+                Dividende moyen
                 """
             )
         

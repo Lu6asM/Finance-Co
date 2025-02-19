@@ -79,7 +79,7 @@ def create_navigation_buttons():
         st.markdown("""
             <div class="custom-card">
                 <h3>🌍 Vue Globale du Marché</h3>
-                <p>Analyse complète de 55 valeurs internationales sélectionnées.</p>
+                <p>Analyse complète de 4462 valeurs internationales sélectionnées.</p>
                 <ul>
                     <li>Cartographie interactive par secteur et capitalisation</li>
                     <li>Filtres dynamiques par pays et secteur d'activité</li>
@@ -325,7 +325,7 @@ def main():
                 cap_filter = st.slider(
                     "Filtrer par capitalisation (Mrd€)",
                     min_value=0.0,
-                    max_value=100.0,
+                    max_value=3200.0,
                     value=(0.0, 100.0),
                     step=5.0
                 )
