@@ -122,7 +122,7 @@ def add_news_ticker():
             animation-delay: -30s;
         }
         @keyframes ticker {
-            0% { transform: translateX(0%); }
+            0% { transform: translateX(100%); }
             100% { transform: translateX(-100%); }
         }
         .ticker-item > span {
