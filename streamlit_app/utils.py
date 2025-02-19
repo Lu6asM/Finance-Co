@@ -121,7 +121,7 @@ def add_news_ticker():
             animation: ticker 180s linear infinite;
         }
         @keyframes ticker {
-            0% { transform: translateX(10%); }
+            0% { transform: translateX(0%); }
             100% { transform: translateX(-100%); }
         }
         .ticker-item > span {
