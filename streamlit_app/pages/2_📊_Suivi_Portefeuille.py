@@ -87,14 +87,15 @@ def main():
         return
     
     # Date de valorisation
-    st.caption("Valorisation au 10/02/2024")
+    st.caption(f"Valorisation au {datetime.now().strftime('%d/%m/%Y %H:%M')}")
     
+    # Calculer la valeur actuelle du portefeuille
+    valeur_totale, variation = tracker.get_current_portfolio_value()
+
     # KPIs principaux
     kpi1, kpi2, kpi3, kpi4, kpi5 = st.columns(5)
 
     with kpi1:
-        valeur_totale = portfolio['valeur_position'].sum()
-        variation = ((valeur_totale / tracker.INITIAL_INVESTMENT) - 1) * 100
         color = "success" if variation >= 0 else "error"
         getattr(st, color)(
             f"""
