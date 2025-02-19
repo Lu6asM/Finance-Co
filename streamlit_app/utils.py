@@ -60,6 +60,9 @@ def prepare_market_data(df):
         df[col] = df[col].str.replace(r'[^\d.-]', '', regex=True)
         df[col] = pd.to_numeric(df[col], errors='coerce')
         df[col] = df[col].fillna(default_value)
+
+    # Multiplication du rendement du dividende par 100 après la conversion
+    df['Rendement_du_dividende'] = df['Rendement_du_dividende'] * 100
     
     # Nettoyage des colonnes catégorielles
     categorical_columns = ['Secteur', 'Industrie', 'Pays']

@@ -22,6 +22,9 @@ class PortfolioManager:
         try:
             self.portfolio_data = pd.read_csv('https://raw.githubusercontent.com/thidescac25/Finance-Co/refs/heads/main/data/selected_stocks.csv')
             
+            if 'Rendement du dividende' in self.portfolio_data.columns:
+                self.portfolio_data['Rendement du dividende'] = self.portfolio_data['Rendement du dividende'] * 100
+                
             # Calcul des métriques de base
             total_stocks = len(self.portfolio_data)
             self.portfolio_data['weight'] = 1 / total_stocks
@@ -38,6 +41,7 @@ class PortfolioManager:
                 'KRW': 0.000696
             }
             
+
             # Déterminer la devise de chaque action
             def get_currency(ticker):
                 if '.PA' in ticker or '.AS' in ticker or '.DE' in ticker or '.BR' in ticker or '.MC' in ticker:
@@ -53,6 +57,7 @@ class PortfolioManager:
                 elif '.KS' in ticker:
                     return 'KRW'
                 return 'USD'
+            
             
             self.portfolio_data['currency'] = self.portfolio_data['Ticker'].apply(get_currency)
             self.portfolio_data['exchange_rate'] = self.portfolio_data['currency'].map(exchange_rates)
