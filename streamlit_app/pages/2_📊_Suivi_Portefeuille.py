@@ -136,11 +136,10 @@ def main():
         )
 
     with kpi5:
-        pct_invested = tracker.INITIAL_INVESTMENT
         getattr(st, "info")(
             f"""
             **📈 Investissement**
-            ### {pct_invested:.1f}%
+            ### 100 %
             Capital utilisé
             """
         )
