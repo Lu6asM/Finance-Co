@@ -136,7 +136,7 @@ def main():
         )
 
     with kpi5:
-        pct_invested = (valeur_totale / tracker.INITIAL_INVESTMENT) * 100
+        pct_invested = tracker.INITIAL_INVESTMENT * 100
         getattr(st, "info")(
             f"""
             **📈 Investissement**
