@@ -119,7 +119,6 @@ def add_news_ticker():
             display: inline-block;
             padding: 0 50px;
             animation: ticker 180s linear infinite;
-            animation-delay: -30s;
         }
         @keyframes ticker {
             0% { transform: translateX(100%); }
