@@ -15,6 +15,7 @@ from portfolio_analyzer import PortfolioAnalyzer, add_technical_analysis
 class PortfolioManager:
     def __init__(self):
         self.INITIAL_INVESTMENT = 1_000_000  # 1M€
+        self.INVESTMENT_DATE = datetime(2024, 1, 1)  # Date fixe de l'investissement initial
         self.load_data()
         
     def load_data(self):
@@ -24,7 +25,7 @@ class PortfolioManager:
             
             if 'Rendement du dividende' in self.portfolio_data.columns:
                 self.portfolio_data['Rendement du dividende'] = self.portfolio_data['Rendement du dividende'] * 100
-                
+
             # Calcul des métriques de base
             total_stocks = len(self.portfolio_data)
             self.portfolio_data['weight'] = 1 / total_stocks
@@ -76,10 +77,54 @@ class PortfolioManager:
             st.error(f"Erreur lors du chargement des données : {str(e)}")
             self.portfolio_data = pd.DataFrame()
 
+    def get_current_portfolio_value(self):
+        """Calcule la valeur actuelle du portefeuille en utilisant yfinance"""
+        try:
+            # Pour chaque position
+            current_values = []
+            progress_bar = st.progress(0)
+            
+            for idx, row in self.portfolio_data.iterrows():
+                progress_bar.progress(idx/len(self.portfolio_data))
+                ticker = row['Ticker']
+                shares = row['shares']
+                exchange_rate = row['exchange_rate']
+                
+                try:
+                    # Récupérer le dernier prix via yfinance
+                    stock = yf.Ticker(ticker)
+                    hist = stock.history(period="1d")
+                    if not hist.empty:
+                        current_price = hist['Close'].iloc[-1]
+                        current_value = current_price * shares * exchange_rate
+                    else:
+                        current_value = row['valeur_position']  # Fallback sur la valeur du CSV
+                except Exception as e:
+                    st.warning(f"Erreur pour {ticker}: {str(e)}")
+                    current_value = row['valeur_position']  # Fallback sur la valeur du CSV
+                
+                current_values.append(current_value)
+            
+            progress_bar.empty()
+            
+            # Mettre à jour les valeurs dans le DataFrame
+            self.portfolio_data['valeur_position_actuelle'] = current_values
+            
+            # Calculer la valeur totale actuelle
+            total_value = sum(current_values)
+            initial_value = self.portfolio_data['valeur_position'].sum()
+            variation = ((total_value/initial_value)-1)*100
+            
+            return total_value, variation
+            
+        except Exception as e:
+            st.error(f"Erreur lors du calcul de la valeur du portefeuille : {str(e)}")
+            return self.portfolio_data['valeur_position'].sum(), 0.0
+
     def get_current_values(self, start_date=None):
         """Récupère les valeurs actuelles et historiques du portefeuille"""
         if start_date is None:
-            start_date = (datetime.now() - timedelta(days=365)).strftime('%Y-%m-%d')
+            start_date = self.INVESTMENT_DATE.strftime('%Y-%m-%d')
         
         # Style CSS pour tous les éléments
         st.markdown("""
@@ -265,8 +310,9 @@ class PortfolioManager:
             st.markdown(f"""
             <div class="summary-card">
                 <h3>📊 Résumé</h3>
+                <p><strong>Date d'investissement:</strong> {self.INVESTMENT_DATE.strftime('%d/%m/%Y')}</p>
                 <p><strong>Valeur initiale:</strong> {total_initial_value:,.2f}€</p>
-                <p><strong>Valeur actuelle:</strong> {total_current_value:,.2f}€</p>
+                <p><strong>Valeur actuelle:</strong> {total_current_value:,.2f}€ <em>(au {datetime.now().strftime('%d/%m/%Y %H:%M')})</em></p>
                 <p><strong>Performance globale:</strong> <span class="{'metric-positive' if total_variation >= 0 else 'metric-negative'}">{total_variation:+.2f}%</span></p>
             </div>
             """, unsafe_allow_html=True)
